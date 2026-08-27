@@ -1,0 +1,103 @@
+@page "/chat"
+@inject HttpClient Http
+@using System.Text
+@rendermode InteractiveWebAssembly
+
+<PageTitle>AI Chat</PageTitle>
+
+<h1>AI Agent Chat</h1>
+
+<div class="chat-container">
+    <div class="messages mb-3" style="min-height: 200px; max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 1rem;">
+        @foreach (var msg in Messages)
+        {
+            <div class="message @(msg.Role.ToLower()) mb-2">
+                <strong>@msg.Role:</strong> 
+                <span>@msg.Content</span>
+            </div>
+        }
+    </div>
+
+    <div class="input-group">
+        <input @bind="Prompt" @bind:event="oninput" @onkeyup="HandleKeyUp" class="form-control" placeholder="Type a message..." disabled="@IsLoading" />
+        <button class="btn btn-primary" @onclick="SendMessage" disabled="@(IsLoading || string.IsNullOrWhiteSpace(Prompt))">
+            @if (IsLoading)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span>Send</span>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    public class ChatMessageDisplay
+    {
+        public string Role { get; set; } = "";
+        public string Content { get; set; } = "";
+    }
+
+    private string Prompt { get; set; } = "";
+    private bool IsLoading { get; set; } = false;
+    private List<ChatMessageDisplay> Messages { get; set; } = new();
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !IsLoading && !string.IsNullOrWhiteSpace(Prompt))
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(Prompt)) return;
+
+        var userPrompt = Prompt;
+        Prompt = "";
+        IsLoading = true;
+
+        Messages.Add(new ChatMessageDisplay { Role = "User", Content = userPrompt });
+        
+        var assistantMessage = new ChatMessageDisplay { Role = "Assistant", Content = "" };
+        Messages.Add(assistantMessage);
+
+        StateHasChanged();
+
+        try
+        {
+            // We use standard HTTP Post to get the stream
+            var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat");
+            request.Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(new { prompt = userPrompt }), Encoding.UTF8, "application/json");
+
+            // WebAssembly fetch enables streaming with HttpCompletionOption.ResponseHeadersRead
+            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+
+            char[] buffer = new char[32];
+            int bytesRead;
+            while ((bytesRead = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
+            {
+                var chunk = new string(buffer, 0, bytesRead);
+                assistantMessage.Content += chunk;
+                StateHasChanged();
+                await Task.Delay(10); // slight debounce for smooth rendering
+            }
+        }
+        catch (Exception ex)
+        {
+            assistantMessage.Content += $"[Error: {ex.Message}]";
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dgSpecHash": "3zlpWpDFkiU=",
+  "success": true,
+  "projectFilePath": "/Users/chrismalpasspersonal/repos/blazor-wasm-agent-chat/BlazorAiChat/BlazorAiChat/BlazorAiChat.csproj",
+  "expectedPackageFiles": [
+    "/Users/chrismalpasspersonal/.nuget/packages/microsoft.aspnetcore.app.internal.assets/10.0.1/microsoft.aspnetcore.app.internal.assets.10.0.1.nupkg.sha512",
+    "/Users/chrismalpasspersonal/.nuget/packages/microsoft.aspnetcore.components.webassembly/10.0.1/microsoft.aspnetcore.components.webassembly.10.0.1.nupkg.sha512",
+    "/Users/chrismalpasspersonal/.nuget/packages/microsoft.aspnetcore.components.webassembly.server/10.0.1/microsoft.aspnetcore.components.webassembly.server.10.0.1.nupkg.sha512",
+    "/Users/chrismalpasspersonal/.nuget/packages/microsoft.dotnet.hotreload.webassembly.browser/10.0.101/microsoft.dotnet.hotreload.webassembly.browser.10.0.101.nupkg.sha512",
+    "/Users/chrismalpasspersonal/.nuget/packages/microsoft.extensions.ai/10.9.0/microsoft.extensions.ai.10.9.0.nupkg.sha512",
+    "/Users/chrismalpasspersonal/.nuget/packages/microsoft.extensions.ai.abstractions/10.9.0/microsoft.extensions.ai.abstractions.10.9.0.nupkg.sha512",
+    "/Users/chrismalpasspersonal/.nuget/packages/microsoft.jsinterop.webassembly/10.0.1/microsoft.jsinterop.webassembly.10.0.1.nupkg.sha512",
+    "/Users/chrismalpasspersonal/.nuget/packages/system.numerics.tensors/10.0.11/system.numerics.tensors.10.0.11.nupkg.sha512"
+  ],
+  "logs": []
+}
