@@ -58,3 +58,5 @@ public class ChatRequest
 {
     public string Prompt { get; set; } = "";
 }
+
+public partial class Program { }
