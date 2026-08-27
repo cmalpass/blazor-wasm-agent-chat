@@ -1,6 +1,6 @@
 # Blazor WASM AI Chat with Microsoft.Extensions.AI
 
-A companion code repository for the blog post: **[Building a Real-Time Blazor WASM AI Chat App with Microsoft.Extensions.AI](https://chrismalpass.com/posts/blazor-wasm-ai-chat-app-with-microsoft-agent-framework/)**.
+A companion code repository for the blog post: **[Building a Real-Time Blazor WASM AI Chat App with Microsoft.Extensions.AI](https://chrismalpass.net/posts/blazor-wasm-ai-chat-app-with-microsoft-agent-framework/)**.
 
 This repository demonstrates a guarded, streaming AI application using **Blazor WebAssembly**, **Microsoft.Extensions.AI**, and .NET 10.
 
