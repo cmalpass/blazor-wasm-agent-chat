@@ -16,6 +16,16 @@ This repository demonstrates a guarded, streaming AI application using **Blazor 
 
 ---
 
+## 📸 Verified browser flow
+
+The screenshot below is captured from the Playwright smoke test committed with this repository. The test starts the app, enters a prompt, observes the active streaming state, and verifies the completed response without configuring credentials.
+
+![A simulated message streamed in the Blazor AI Chat UI](docs/evidence/chat-streaming.png)
+
+The same test runs in GitHub Actions. Its successful screenshot is retained as the `browser-test-evidence` workflow artifact; failed runs include a trace as well, making browser failures inspectable instead of relying only on a pass/fail result.
+
+---
+
 ## 📁 Solution Structure
 
 - `BlazorAiChat/BlazorAiChat`: The ASP.NET Core backend server hosting the `/api/chat` streaming Minimal API endpoint and registering `IChatClient`.
@@ -42,7 +52,7 @@ This repository demonstrates a guarded, streaming AI application using **Blazor 
 
 3. Navigate to `https://localhost:7150/chat` (or the HTTP/HTTPS port shown in your terminal) and start chatting!
 
-By default, the application runs with an in-memory `SimulatedChatClient` so you can test token streaming immediately without configuring external API keys.
+By default, the application runs with an in-memory `SimulatedChatClient` so you can test token streaming immediately without configuring external API keys. The local development launch profile also permits the chat endpoint anonymously; production always requires a JWT.
 
 ### Production authentication and limits
 
@@ -58,7 +68,17 @@ Run the deterministic gateway and component suite with:
 dotnet test BlazorAiChat/BlazorAiChat.sln --configuration Release
 ```
 
-The suite covers the simulated provider, gateway validation, the production authentication requirement, and bUnit component states. It is not browser E2E coverage; add Playwright or an equivalent browser suite when validating your identity-provider and streaming behavior in the browsers you support.
+The suite covers the simulated provider, gateway validation, the production authentication requirement, and bUnit component states.
+
+To run the browser smoke test locally (the same flow used for the screenshot), install its isolated Node dependencies and Chromium once:
+
+```bash
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+When no local instance is already running, the Playwright test starts the Development profile itself. It submits a prompt, verifies the visible streaming state and final response, and attaches a full-page screenshot to the test result. It validates the zero-config happy path; add provider-specific and identity-provider scenarios as you introduce them.
 
 ---
 

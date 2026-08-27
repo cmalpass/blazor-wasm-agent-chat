@@ -15,6 +15,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();
 
+// Chat.razor is prerendered by the server before the WebAssembly runtime takes
+// over, so it needs an HttpClient service during that initial render as well.
+builder.Services.AddHttpClient();
+
 builder.Services.AddSingleton<IChatClient, SimulatedChatClient>();
 
 // The endpoint remains frictionless when running the simulated local demo. In every
