@@ -95,10 +95,8 @@ To use a local Ollama model instead of the simulated client:
    ```csharp
    using OllamaSharp;
 
-   var ollama = new OllamaApiClient(new Uri("http://localhost:11434"));
-   ollama.SelectedModel = "phi3"; // or llama3.1, qwen2.5-coder
-
-   builder.Services.AddSingleton<IChatClient>(ollama);
+   builder.Services.AddSingleton<IChatClient>(
+       new OllamaApiClient(new Uri("http://localhost:11434"), "phi3"));
    ```
 
 The Blazor WASM client requires zero code changes.
