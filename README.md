@@ -2,7 +2,7 @@
 
 A companion code repository for the blog post: **[Building a Real-Time Blazor WASM AI Chat App with Microsoft.Extensions.AI](https://chrismalpass.com/posts/blazor-wasm-ai-chat-app-with-microsoft-agent-framework/)**.
 
-This repository demonstrates how to architect a secure, high-performance streaming AI application using **Blazor WebAssembly** and **Microsoft.Extensions.AI** on .NET 9.
+This repository demonstrates a guarded, streaming AI application using **Blazor WebAssembly**, **Microsoft.Extensions.AI**, and .NET 10.
 
 ---
 
@@ -10,8 +10,9 @@ This repository demonstrates how to architect a secure, high-performance streami
 
 - **Agent Gateway Pattern**: The Blazor WASM client communicates with an ASP.NET Core backend Minimal API, ensuring LLM API keys and credentials are never exposed in the browser.
 - **Provider-Agnostic AI**: Implements Microsoft's new `IChatClient` abstraction, allowing seamless switching between OpenAI, Azure OpenAI, Anthropic, and local models (via Ollama) without changing business logic.
-- **True Token Streaming**: Streams token-by-token responses from backend to WASM using `IAsyncEnumerable<ChatResponseUpdate>` and HTTP response streaming (`HttpCompletionOption.ResponseHeadersRead`).
-- **UI Thread Safety**: Debounces DOM re-renders (`StateHasChanged()`) during high-frequency token bursts to prevent browser UI freezing.
+- **Browser Streaming**: Enables Blazor's browser response streaming as well as `HttpCompletionOption.ResponseHeadersRead`, then consumes the `IAsyncEnumerable<ChatResponseUpdate>` output from the gateway.
+- **Bounded Gateway**: Limits conversation size, applies per-user/IP rate limits and a request timeout, emits safe operational telemetry, and requires JWT authentication outside Development.
+- **UI Thread Safety**: Coalesces DOM re-renders to a 50 ms cadence during high-frequency token bursts and allows the user to cancel a response.
 
 ---
 
@@ -25,7 +26,7 @@ This repository demonstrates how to architect a secure, high-performance streami
 ## 🛠️ Getting Started
 
 ### Prerequisites
-- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) (or .NET 10 preview)
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 ### Running Locally
 1. Clone the repository:
@@ -42,6 +43,22 @@ This repository demonstrates how to architect a secure, high-performance streami
 3. Navigate to `https://localhost:7150/chat` (or the HTTP/HTTPS port shown in your terminal) and start chatting!
 
 By default, the application runs with an in-memory `SimulatedChatClient` so you can test token streaming immediately without configuring external API keys.
+
+### Production authentication and limits
+
+The demo allows anonymous access **only** in the `Development` environment so it remains runnable out of the box. In every other environment, `/api/chat` requires a validated JWT bearer token. Configure your identity provider through the standard `Authentication:Schemes:Bearer` configuration section, and send the resulting token from the client or a server-side BFF. Never put a provider API key or a long-lived JWT in the WebAssembly application.
+
+The endpoint accepts at most 20 user/assistant messages, 4,000 characters per message, and 8,000 characters per conversation. Its sample per-user/IP rate limit is 10 requests per minute; tune it to the selected model, tenant plan, and infrastructure capacity. The app records activity and metrics without recording prompts or completions, ready for an OpenTelemetry exporter in the host.
+
+### Testing
+
+Run the deterministic gateway and component suite with:
+
+```bash
+dotnet test BlazorAiChat/BlazorAiChat.sln --configuration Release
+```
+
+The suite covers the simulated provider, gateway validation, the production authentication requirement, and bUnit component states. It is not browser E2E coverage; add Playwright or an equivalent browser suite when validating your identity-provider and streaming behavior in the browsers you support.
 
 ---
 

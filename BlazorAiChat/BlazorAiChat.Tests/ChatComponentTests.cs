@@ -100,6 +100,6 @@ public class ChatComponentTests : BunitContext
         // Assert
         cut.WaitForState(() => cut.FindAll(".message").Count >= 2);
         var assistantMsg = cut.FindAll(".message")[1];
-        assistantMsg.TextContent.Should().Contain("[Error:");
+        assistantMsg.TextContent.Should().Contain("[The chat service is unavailable. Please try again.]");
     }
 }

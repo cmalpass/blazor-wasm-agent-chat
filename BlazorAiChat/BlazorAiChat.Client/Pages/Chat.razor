@@ -1,6 +1,10 @@
 @page "/chat"
 @inject HttpClient Http
 @using System.Text
+@using System.Diagnostics
+@using BlazorAiChat.Contracts
+@using Microsoft.AspNetCore.Components.WebAssembly.Http
+@implements IDisposable
 @rendermode InteractiveWebAssembly
 
 <PageTitle>AI Chat</PageTitle>
@@ -30,19 +34,18 @@
                 <span>Send</span>
             }
         </button>
+        @if (IsLoading)
+        {
+            <button class="btn btn-outline-secondary" @onclick="CancelResponse">Stop</button>
+        }
     </div>
 </div>
 
 @code {
-    public class ChatMessageDisplay
-    {
-        public string Role { get; set; } = "";
-        public string Content { get; set; } = "";
-    }
-
     private string Prompt { get; set; } = "";
     private bool IsLoading { get; set; } = false;
-    private List<ChatMessageDisplay> Messages { get; set; } = new();
+    private List<ChatMessageDto> Messages { get; set; } = new();
+    private CancellationTokenSource? activeRequestCancellation;
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
     {
@@ -56,48 +59,85 @@
     {
         if (string.IsNullOrWhiteSpace(Prompt)) return;
 
+        var cancellationSource = new CancellationTokenSource();
+
         var userPrompt = Prompt;
         Prompt = "";
         IsLoading = true;
 
-        Messages.Add(new ChatMessageDisplay { Role = "User", Content = userPrompt });
+        Messages.Add(new ChatMessageDto { Role = "User", Content = userPrompt });
+
+        var requestBody = new ChatRequest
+        {
+            Messages = Messages.Select(message => new ChatMessageDto
+            {
+                Role = message.Role,
+                Content = message.Content
+            }).ToList()
+        };
         
-        var assistantMessage = new ChatMessageDisplay { Role = "Assistant", Content = "" };
+        var assistantMessage = new ChatMessageDto { Role = "Assistant", Content = "" };
         Messages.Add(assistantMessage);
 
         StateHasChanged();
 
         try
         {
-            // We use standard HTTP Post to get the stream
-            var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat");
-            request.Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(new { prompt = userPrompt }), Encoding.UTF8, "application/json");
+            using var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat")
+            {
+                Content = new StringContent(System.Text.Json.JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json")
+            };
 
-            // WebAssembly fetch enables streaming with HttpCompletionOption.ResponseHeadersRead
-            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            // Both settings are required for streamed responses in Blazor WebAssembly.
+            request.SetBrowserResponseStreamingEnabled(true);
+            activeRequestCancellation = cancellationSource;
+
+            using var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationSource.Token);
             response.EnsureSuccessStatusCode();
 
-            using var stream = await response.Content.ReadAsStreamAsync();
+            using var stream = await response.Content.ReadAsStreamAsync(cancellationSource.Token);
             using var reader = new StreamReader(stream);
 
             char[] buffer = new char[32];
             int bytesRead;
+            var accumulatedResponse = new StringBuilder();
+            var lastRender = Stopwatch.GetTimestamp();
             while ((bytesRead = await reader.ReadAsync(buffer, 0, buffer.Length)) > 0)
             {
-                var chunk = new string(buffer, 0, bytesRead);
-                assistantMessage.Content += chunk;
-                StateHasChanged();
-                await Task.Delay(10); // slight debounce for smooth rendering
+                accumulatedResponse.Append(buffer, 0, bytesRead);
+
+                if (Stopwatch.GetElapsedTime(lastRender) >= TimeSpan.FromMilliseconds(50))
+                {
+                    assistantMessage.Content = accumulatedResponse.ToString();
+                    await InvokeAsync(StateHasChanged);
+                    lastRender = Stopwatch.GetTimestamp();
+                }
             }
+
+            assistantMessage.Content = accumulatedResponse.ToString();
         }
-        catch (Exception ex)
+        catch (OperationCanceledException)
         {
-            assistantMessage.Content += $"[Error: {ex.Message}]";
+            assistantMessage.Content += "[Response cancelled.]";
+        }
+        catch (HttpRequestException)
+        {
+            assistantMessage.Content += "[The chat service is unavailable. Please try again.]";
         }
         finally
         {
+            if (ReferenceEquals(activeRequestCancellation, cancellationSource))
+            {
+                activeRequestCancellation = null;
+            }
+
+            cancellationSource.Dispose();
             IsLoading = false;
             StateHasChanged();
         }
     }
+
+    private void CancelResponse() => activeRequestCancellation?.Cancel();
+
+    public void Dispose() => activeRequestCancellation?.Cancel();
 }
