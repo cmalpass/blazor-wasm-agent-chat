@@ -4,6 +4,8 @@ A companion code repository for the blog post: **[Building a Real-Time Blazor WA
 
 This repository demonstrates a guarded, streaming AI application using **Blazor WebAssembly**, **Microsoft.Extensions.AI**, and .NET 10.
 
+The verified package baseline is ASP.NET Core 10.0.11 and Microsoft.Extensions.AI 10.9.0. Test-only packages are pinned in the test project so the companion implementation and the blog post remain reproducible.
+
 ---
 
 ## 🚀 Architecture Highlights
