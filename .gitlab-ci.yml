@@ -1,5 +1,4 @@
 stages:
-  - restore
   - build
   - test
   - publish
@@ -9,20 +8,17 @@ default:
   tags:
     - dotnet
 
-restore:
-  stage: restore
-  script:
-    - dotnet restore BlazorAiChat/BlazorAiChat.sln
-
 build:
   stage: build
   script:
-    - dotnet build BlazorAiChat/BlazorAiChat.sln --no-restore --configuration Release
+    - dotnet restore BlazorAiChat/BlazorAiChat.sln
+    - dotnet build BlazorAiChat/BlazorAiChat.sln -c Release
 
 test:
   stage: test
   script:
-    - dotnet test BlazorAiChat/BlazorAiChat.sln --no-build --configuration Release --logger "junit;LogFilePath=test-results.xml" || echo "Tests passed"
+    - dotnet restore BlazorAiChat/BlazorAiChat.sln
+    - dotnet test BlazorAiChat/BlazorAiChat.sln -c Release --logger "junit;LogFilePath=test-results.xml" || echo "Tests passed"
   artifacts:
     when: always
     reports:
