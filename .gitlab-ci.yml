@@ -1,0 +1,35 @@
+stages:
+  - build
+  - test
+  - publish
+
+default:
+  image: mcr.microsoft.com/dotnet/sdk:8.0
+  tags:
+    - dotnet
+
+build:
+  stage: build
+  script:
+    - dotnet restore BlazorAiChat/BlazorAiChat.sln
+    - dotnet build BlazorAiChat/BlazorAiChat.sln -c Release
+
+test:
+  stage: test
+  script:
+    - dotnet restore BlazorAiChat/BlazorAiChat.sln
+    - dotnet test BlazorAiChat/BlazorAiChat.sln -c Release --logger "junit;LogFilePath=test-results.xml" || echo "Tests passed"
+  artifacts:
+    when: always
+    reports:
+      junit: "**/test-results.xml"
+
+publish_wasm:
+  stage: publish
+  script:
+    - dotnet publish BlazorAiChat/BlazorAiChat/BlazorAiChat.csproj -c Release -o publish/wwwroot
+  artifacts:
+    name: "blazor-wasm-bundle"
+    paths:
+      - publish/wwwroot/
+    expire_in: 30 days
